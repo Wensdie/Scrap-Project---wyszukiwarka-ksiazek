@@ -18,5 +18,7 @@ async function EmpikSearch(search, page) {
     await searchBar.click();
     await searchBar.type(search);
     await page.keyboard.press('Enter');
+    const await page.waitForSelector()
+    return 
 }   
 Scrap("Cos");

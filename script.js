@@ -1,24 +1,18 @@
 import puppeteer from "puppeteer"
 
-async function Scrap(search){
+async function ScrapEmpik(search){
     if (search != null) {
         const Puppe = await puppeteer.launch({
             headless: false,
             deafultViewport: null,
         });
         const page = await Puppe.newPage();
-        let result = [];
-        result.push(EmpikSearch(search, page));
+        await page.goto("http://www.empik.com/szukaj/produkt?q="+ search +"&qtype=basicForm&ac=true", { waitUntil: "domcontentloaded", });
+        const bookInfo = await page.evaluate(() => {
+            const title = document.querySelector("a.seoTitle").innerText;
+            return title;
+        });
+        console.log(bookInfo);
     }
-}
-
-async function EmpikSearch(search, page) {
-    await page.goto("https://www.empik.com", { waitUntil: "domcontentloaded", });
-    const searchBar = await page.waitForSelector("input[type = 'search']");
-    await searchBar.click();
-    await searchBar.type(search);
-    await page.keyboard.press('Enter');
-    const await page.waitForSelector()
-    return 
-}   
-Scrap("Cos");
+} 
+ScrapEmpik("Cos");

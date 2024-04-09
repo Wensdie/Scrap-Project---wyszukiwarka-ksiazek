@@ -34,14 +34,14 @@ async function TaniaKsiazkaSearch(search, Puppe) {
     const page = await Puppe.newPage();
     await page.goto("https://www.taniaksiazka.pl/Szukaj/q-" + search +"?params[tg]=1&params[last]=tg#products-list-pos", { waitUntil: "domcontentloaded", });
     const bookInfo = await page.evaluate(() => {
-        const books = document.querySelectorAll("div.product-container.gtmPromotionView");
+        const books = document.querySelectorAll("html body div.container.with-below-header section#content.main.new-listing.page-szukaj div.row div.col-xs-10 article ul.toggle-view.grid li div.product-container.gtmPromotionView");
         return Array.from(books).map((book) => {
             let title = book.querySelector("a.ecommerce-datalayer.product-title").innerText;
-            //let author = book.querySelector("div.product-authors").innerText;
-            // let price = book.querySelector("span.product-price ").innerText;
-            // let img = "https:" + book.querySelector("img.lazyload-medium.lazyload").getAttribute("src");
-            // let link = "https://www.taniaksiazka.pl" + book.querySelector("a.ecommerce-datalayer ").getAttribute("href");
-            return {title};
+            let author = book.querySelector("html body div.container.with-below-header section#content.main.new-listing.page-szukaj div.row div.col-xs-10 article ul.toggle-view.grid li div.product-container.gtmPromotionView div.product-main div.product-main-top div.product-main-top-info div.product-main-hidden div div.product-authors").innerText;
+            let price = book.querySelector("span[class='product-price '").innerText;
+            let img = "https:" + book.querySelector("html body div.container.with-below-header section#content.main.new-listing.page-szukaj div.row div.col-xs-10 article ul.toggle-view.grid li div.product-container.gtmPromotionView div.product-image a.ecommerce-datalayer img.lazyload-medium.lazyload").getAttribute("src");
+            let link = "https://www.taniaksiazka.pl" + book.querySelector("a.ecommerce-datalayer ").getAttribute("href");
+            return {title, author, price, img, link};
         });
     });
     console.log(bookInfo);

@@ -11,6 +11,10 @@
   "type": "module",
   "types": "module",
   "dependencies": {
-    "puppeteer": "^21.5.2"
+    "axios": "^1.6.8",
+    "body-parser": "^1.20.2",
+    "express": "^4.19.2",
+    "pg": "^8.11.5",
+    "puppeteer": "^21.11.0"
   }
 }

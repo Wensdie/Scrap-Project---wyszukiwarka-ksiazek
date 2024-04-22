@@ -1,0 +1,17 @@
+table, th, tr, td {
+    border-style: solid;
+    border-color: black;
+    border-collapse: collapse;
+}
+td, th {
+    width: 18%;
+    height: 20%;
+}
+table{
+    width: 100%;
+    text-align: center;
+}
+.menu {
+    width: 50%;
+    float: left;
+}

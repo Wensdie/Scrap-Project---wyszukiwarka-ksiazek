@@ -1,88 +1,125 @@
-import puppeteer from "puppeteer"
+window.onload = () => {
+    const button = document.getElementById("searchButton");
+    let table = document.getElementById("dataTable");
+    let shop;
+    let tableInnerHtmlVariable = "";
+    let result;
 
-async function Scrap(search) {
-    if (search != null) {
-        const Puppe = await puppeteer.launch({
-            headless: false,
-            deafultViewport: null,
+    button.addEventListener("click", async () => {
+        let search = document.getElementById("searchBar").value;
+        document.getElementById("searchButton").disabled = true;
+        axios.get("http://localhost:8081/" + search).
+        then((res) => {
+            result = res.data;
+            console.log(result);
+            tableInnerHtmlVariable += "<br><table>"+
+            "<tr>"+
+                "<th>Sklep</th>"+
+                "<th>Tytuł</th>"+
+                "<th>Autor</th>"+
+                "<th>Cena</th>"+
+                "<th>Zdjęcie</th>"+
+                "<th>Link</th>"+
+           " </tr>";
+            for(let i = 0; i < result.length; i++){
+                for(let j = 0; j <result[i].length; j++){
+                    if(i == 0)
+                        shop = "Empik";
+                    else if(i == 1)
+                        shop = "Tania Książka";
+                    else
+                        shop = "Tantis";
+
+                    tableInnerHtmlVariable += "<tr>";
+                    tableInnerHtmlVariable += "<td>";
+                    tableInnerHtmlVariable += shop;
+                    tableInnerHtmlVariable += "</td>";
+                    tableInnerHtmlVariable += "<td>";
+                    tableInnerHtmlVariable += result[i][j].title;
+                    tableInnerHtmlVariable += "</td>";
+                    tableInnerHtmlVariable += "<td>";
+                    tableInnerHtmlVariable += result[i][j].author;
+                    tableInnerHtmlVariable += "</td>";
+                    tableInnerHtmlVariable += "<td>";
+                    tableInnerHtmlVariable += result[i][j].price;
+                    tableInnerHtmlVariable += "</td>";
+                    tableInnerHtmlVariable += "<td>";
+                    tableInnerHtmlVariable += "<img src='" + result[i][j].img + "'>";
+                    tableInnerHtmlVariable += "</td>";
+                    tableInnerHtmlVariable += "<td>";
+                    tableInnerHtmlVariable += "<a href='" + result[i][j].link + "' target='_blank'>Link</a>";
+                    tableInnerHtmlVariable += "</td>";
+                    tableInnerHtmlVariable += "</tr>";
+                }
+            }
+            tableInnerHtmlVariable += "</table>";
+            table.innerHTML = "";
+            table.innerHTML = tableInnerHtmlVariable;
+            tableInnerHtmlVariable = "";
+        })
+        .catch((error) => {
+            console.log(error);
         });
-        let result = [];
-        // result.push(EmpikSearch(search, Puppe));
-        // result.push(TaniaKsiazkaSearch(search, Puppe));
-        // result.push(TantisSearch(search, Puppe));
-        result.push(SwiatKsiazkiSearch(search, Puppe));
-    }
-}
+        document.getElementById("searchButton").disabled = false;
+    });
 
-async function EmpikSearch(search, Puppe) {
-    const page = await Puppe.newPage();
-    await page.goto("https://www.empik.com/ksiazki,31,s?q=" + search + "&qtype=basicForm&resultsPP=6", { waitUntil: "domcontentloaded", });
-    const bookInfo = await page.evaluate(() => {
-        const books = document.querySelectorAll("div.search-list-item-hover");
-        return Array.from(books).map((book) => {
-            let title = book.querySelector("a.seoTitle").innerText;
-            let author = book.querySelector("a.smartAuthor").innerText;
-            let price = book.querySelector("div[itemprop='price']").innerText;
-            let img = book.querySelector("img.lazy").getAttribute("lazy-img");
-            let link = "https://www.empik.com" + book.querySelector("a.seoTitle").getAttribute("href");
-            return {title, author, price, img, link};
+    buttonSave = document.getElementById("saveRequest");
+    buttonShowSaved = document.getElementById("showSavedRequests");
+
+    buttonSave.addEventListener("click", () =>{
+            axios.post("http://localhost:8081/", { 
+                action : 'save'
+            }).then((res) => {
+                window.alert(res.data);
+            });
+    });
+
+    buttonShowSaved.addEventListener("click", () =>{
+        axios.post("http://localhost:8081/", { 
+            action : 'show'
+        }).then((res) => {
+            table.innerHTML = "";
+            for(let i = 0; i < res.data[0].rowCount; i++){
+                let oneSearchResults = res.data[1].rows.filter((row) => {
+                    return row.id_search == res.data[0].rows[i].id_search;
+                });
+                tableInnerHtmlVariable += "<h1>" + res.data[0].rows[i].phrase +" - " + res.data[0].rows[i].date + "  </h1>";
+                tableInnerHtmlVariable += "<table>"+
+                "<tr>"+
+                    "<th>Sklep</th>"+
+                    "<th>Tytuł</th>"+
+                    "<th>Autor</th>"+
+                    "<th>Cena</th>"+
+                    "<th>Zdjęcie</th>"+
+                    "<th>Link</th>"+
+               " </tr>";
+                for(let i = 0; i < oneSearchResults.length; i++){
+                    tableInnerHtmlVariable += "<tr>";
+                    tableInnerHtmlVariable += "<td>";
+                    tableInnerHtmlVariable += oneSearchResults[i].shop_name;
+                    tableInnerHtmlVariable += "</td>";
+                    tableInnerHtmlVariable += "<td>";
+                    tableInnerHtmlVariable += oneSearchResults[i].title;
+                    tableInnerHtmlVariable += "</td>";
+                    tableInnerHtmlVariable += "<td>";
+                    tableInnerHtmlVariable += oneSearchResults[i].author;
+                    tableInnerHtmlVariable += "</td>";
+                    tableInnerHtmlVariable += "<td>";
+                    tableInnerHtmlVariable += oneSearchResults[i].price;
+                    tableInnerHtmlVariable += "</td>";
+                    tableInnerHtmlVariable += "<td>";
+                    tableInnerHtmlVariable += "<img src='" + oneSearchResults[i].img + "'>";
+                    tableInnerHtmlVariable += "</td>";
+                    tableInnerHtmlVariable += "<td>";
+                    tableInnerHtmlVariable += "<a href='" + oneSearchResults[i].link + "' target='_blank'>Link</a>";
+                    tableInnerHtmlVariable += "</td>";
+                    tableInnerHtmlVariable += "</tr>";
+                }
+                tableInnerHtmlVariable += "</table>";
+            }
+            table.innerHTML = "";
+            table.innerHTML = tableInnerHtmlVariable;
+            tableInnerHtmlVariable = "";
         });
     });
-    console.log(bookInfo);
-    return bookInfo;
-}
-
-async function TaniaKsiazkaSearch(search, Puppe) {
-    const page = await Puppe.newPage();
-    await page.goto("https://www.taniaksiazka.pl/Szukaj/q-" + search +"?params[tg]=1&params[last]=tg#products-list-pos", { waitUntil: "domcontentloaded", });
-    const bookInfo = await page.evaluate(() => {
-        const books = document.querySelectorAll("html body div.container.with-below-header section#content.main.new-listing.page-szukaj div.row div.col-xs-10 article ul.toggle-view.grid li div.product-container.gtmPromotionView");
-        return Array.from(books).map((book) => {
-            let title = book.querySelector("a.ecommerce-datalayer.product-title").innerText;
-            let author = book.querySelector("html body div.container.with-below-header section#content.main.new-listing.page-szukaj div.row div.col-xs-10 article ul.toggle-view.grid li div.product-container.gtmPromotionView div.product-main div.product-main-top div.product-main-top-info div.product-main-hidden div div.product-authors").innerText;
-            let price = book.querySelector("span[class='product-price '").innerText;
-            let img = "https:" + book.querySelector("html body div.container.with-below-header section#content.main.new-listing.page-szukaj div.row div.col-xs-10 article ul.toggle-view.grid li div.product-container.gtmPromotionView div.product-image a.ecommerce-datalayer img.lazyload-medium.lazyload").getAttribute("data-src");
-            let link = "https://www.taniaksiazka.pl" + book.querySelector("a.ecommerce-datalayer ").getAttribute("href");
-            return {title, author, price, img, link};
-        });
-    });
-    console.log(bookInfo);
-    return bookInfo;
-}
-
-async function TantisSearch(search, Puppe) {
-    const page = await Puppe.newPage();
-    await page.goto("https://tantis.pl/ksiazki-c1450?query=" + search +"&sortBy=match&showPerPage=6", { waitUntil: "domcontentloaded", });
-    const bookInfo = await page.evaluate(() => {
-        const books = document.querySelectorAll("html.webp-supported body.base-layout.desktop.cookie-modal-opened.result-list div#shopContent div#site-content.container-fluid div.row main.col-10 div.row div.product-list div#productGridRow.row div.col-10 div.product-list-grid.row div.product-box div.card.product-card.no-hover-card.with-ratings");
-        return Array.from(books).map((book) => {
-            let title = book.querySelector("html.webp-supported body.base-layout.desktop.cookie-modal-opened.result-list div#shopContent div#site-content.container-fluid div.row main.col-10 div.row div.product-list div#productGridRow.row div.col-10 div.product-list-grid.row div.product-box div.card.product-card.no-hover-card.with-ratings div.card-body div.details-part h3.card-title.product-name").innerText;
-            let author = book.querySelector("html.webp-supported body.base-layout.desktop.cookie-modal-opened.result-list div#shopContent div#site-content.container-fluid div.row main.col-10 div.row div.product-list div#productGridRow.row div.col-10 div.product-list-grid.row div.product-box div.card.product-card.no-hover-card.with-ratings div.card-body div.details-part div.authors-cover-part div.authors-list p.card-text.author").innerText;
-            let price = book.querySelector("html.webp-supported body.base-layout.desktop.cookie-modal-opened.result-list div#shopContent div#site-content.container-fluid div.row main.col-10 div.row div.product-list div#productGridRow.row div.col-10 div.product-list-grid.row div.product-box div.card.product-card.no-hover-card.with-ratings div.card-body div.details-part div.product-price-container span.product-price").innerText;
-            let img = book.querySelector("html.webp-supported body.base-layout.desktop.cookie-modal-opened.result-list div#shopContent div#site-content.container-fluid div.row main.col-10 div.row div.product-list div#productGridRow.row div.col-10 div.product-list-grid.row div.product-box div.card.product-card.no-hover-card.with-ratings div.card-body div.img-part div.product-img-container.product-card-img-container a img.product-img").getAttribute("src");
-            let link = book.querySelector("html.webp-supported body.base-layout.desktop.cookie-modal-opened.result-list div#shopContent div#site-content.container-fluid div.row main.col-10 div.row div.product-list div#productGridRow.row div.col-10 div.product-list-grid.row div.product-box div.card.product-card.no-hover-card.with-ratings div.card-body div.img-part div.product-img-container.product-card-img-container a").getAttribute("href");
-            return {title, author, price, img, link};
-        });
-    });
-    console.log(bookInfo);
-    return bookInfo;
-}
-
-async function SwiatKsiazkiSearch(search, Puppe) {
-    const page = await Puppe.newPage();
-    await page.goto("https://www.swiatksiazki.pl/search/" + search + "?customFilters=category_id:4", { waitUntil: "domcontentloaded", });
-    const bookInfo = await page.evaluate(() => {
-        const books = document.querySelectorAll("div[class='ProductCard-LinkInnerWrapper']");
-        return Array.from(books).map((book) => {
-            let title = book.querySelector("html.hiddenHeader.hideOnScroll body div#root div.LocalizationWrapper-pl_PL main.CategoryPage section div.ContentWrapper.CategoryPage-Wrapper div.CategoryPage-ProductListWrapper div.ProductList.CategoryProductList.CategoryProductList_layout_grid ul.ProductListPage.CategoryProductList-Page.CategoryProductList-Page_layout_grid li.ProductCard.ProductCard_layout_grid a.ProductCard-Link div.ProductCard-LinkInnerWrapper div.ProductCard-Content a.ProductCard-Link p.ProductCard-Name").innerText;
-            let author = book.querySelector("html.hiddenHeader.hideOnScroll body div#root div.LocalizationWrapper-pl_PL main.CategoryPage section div.ContentWrapper.CategoryPage-Wrapper div.CategoryPage-ProductListWrapper div.ProductList.CategoryProductList.CategoryProductList_layout_grid ul.ProductListPage.CategoryProductList-Page.CategoryProductList-Page_layout_grid li.ProductCard.ProductCard_layout_grid a.ProductCard-Link div.ProductCard-LinkInnerWrapper div.ProductCard-Content div.ProductAuthors.ProductAuthors_isShort.ProductCard-ProductAuthors a.ProductCard-Author").innerText;
-            let price = book.querySelector("html.hiddenHeader.hideOnScroll body div#root div.LocalizationWrapper-pl_PL main.CategoryPage section div.ContentWrapper.CategoryPage-Wrapper div.CategoryPage-ProductListWrapper div.ProductList.CategoryProductList.CategoryProductList_layout_grid ul.ProductListPage.CategoryProductList-Page.CategoryProductList-Page_layout_grid li.ProductCard.ProductCard_layout_grid a.ProductCard-Link div.ProductCard-LinkInnerWrapper div.ProductCard-Content div.ProductCard-PriceWrapper div.ProductPrice.ProductPrice_hasDiscount.ProductPrice_isPreview.ProductCard-Price ins.ProductPrice-Price span.ProductPrice-PriceValue").innerText;
-            let img = book.querySelector("html.hiddenHeader body div#root div.LocalizationWrapper-pl_PL main.CategoryPage section div.ContentWrapper.CategoryPage-Wrapper div.CategoryPage-ProductListWrapper div.ProductList.CategoryProductList.CategoryProductList_layout_grid ul.ProductListPage.CategoryProductList-Page.CategoryProductList-Page_layout_grid li.ProductCard.ProductCard_layout_grid a.ProductCard-Link div.ProductCard-LinkInnerWrapper div.ProductCard-FigureReview figure.ProductCard-Figure div.Image.Image_ratio_custom.Image_imageStatus_image_loading.Image_hasSrc.ProductCard-Picture span.lazy-load-image-background.opacity.lazy-load-image-loaded img").getAttribute("src");
-            let link = "https://www.swiatksiazki.pl" + book.querySelector("html.hiddenHeader body div#root div.LocalizationWrapper-pl_PL main.CategoryPage section div.ContentWrapper.CategoryPage-Wrapper div.CategoryPage-ProductListWrapper div.ProductList.CategoryProductList.CategoryProductList_layout_grid ul.ProductListPage.CategoryProductList-Page.CategoryProductList-Page_layout_grid li.ProductCard.ProductCard_layout_grid a.ProductCard-Link div.ProductCard-LinkInnerWrapper div.ProductCard-Content a.ProductCard-Link").getAttribute("href");
-            return {title, author, price, img, link};
-        });
-    });
-    console.log(bookInfo);
-    return bookInfo;
-}
-Scrap("Coś");
+};

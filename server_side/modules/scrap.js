@@ -1,83 +1,9 @@
-import puppeteer from "puppeteer"
-import express, { json } from "express";
-import pg from 'pg';
-import bodyParser from "body-parser";
-
-const app = express();
-app.listen(8081);
-app.use(bodyParser.json());
-app.use((req, res, next) => {
-    res.header("Access-Control-Allow-Origin", "*");
-    res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept");
-    next();
-});
-
-app.get('/:search', async (req, res, next) => {
-    console.log('Request: "' + req.params.search + '"');
-    res.json(await Scrap(req.params.search));
-});
-
-app.post("/", async (req, res, next) => {
-    const { Client } = pg;
-    const conn = new Client({
-        user: 'postgres',
-        password: 'admin',
-        host: 'localhost',
-        port: '5432',
-        database: 'scrap-project',
-    });
-
-    conn.connect()
-    .then(() => {
-        console.log('Connected.');
-    })
-    .catch((err) => {
-        console.error('Error connecting to database', err);
-    });
-    
-    if(req.body.action == "save" && lastRequestResult != null && lastSearch != null){
-        let shop;
-        let querySearch = "INSERT INTO searches (phrase) VALUES ($1);";
-        await conn.query(querySearch, [lastSearch]);
-        let queryGetSearchID = "SELECT id_search FROM searches ORDER BY id_search DESC;";
-        let searchID = (await conn.query(queryGetSearchID)).rows[0].id_search;
-        let queryResults = "INSERT INTO results (id_search, shop_name, title, author, price, img, link) VALUES ($1, $2, $3, $4, $5, $6, $7);";
-        for(let i = 0; i < lastRequestResult.length; i++){
-            if(i == 0)
-                    shop = "Empik";
-                else if(i == 1)
-                    shop = "Tania Książka";
-                else
-                    shop = "Tantis";
-                
-            for(let j = 0; j <lastRequestResult[i].length; j++){
-                await conn.query(queryResults, [searchID, shop, lastRequestResult[i][j].title, lastRequestResult[i][j].author, lastRequestResult[i][j].price, lastRequestResult[i][j].img, lastRequestResult[i][j].link]);
-            }
-        }
-        res.send("Succesfully saved.");
-        console.log("Succesfully saved.");
-    }
-    else if(req.body.action == "show"){
-        let showSearches = "SELECT * FROM searches ORDER BY id_search DESC";
-        let showResults = "SELECT * FROM results" 
-        let results1 = await conn.query(showSearches);
-        let results2 = await conn.query(showResults)
-        let results = [results1, results2];
-        res.json(results);
-    }
-    else{
-        res.send("Nie znane działanie.")
-    }
-    conn.end();
-});
-
-let lastRequestResult;
-let lastSearch
+import puppeteer from "puppeteer";
 
 async function Scrap(search) {
     if (search != null) {
         const Puppe = await puppeteer.launch({
-            headless: 'new',
+            headless: 'false',
             deafultViewport: null,
         });
         let result = [];
@@ -85,8 +11,6 @@ async function Scrap(search) {
         result.push(await TaniaKsiazkaSearch(search, Puppe));
         result.push(await TantisSearch(search, Puppe));
         Puppe.close();
-        lastRequestResult = result;
-        lastSearch = search;
         return result;
     }
 }
@@ -95,13 +19,13 @@ async function EmpikSearch(search, Puppe) {
     const page = await Puppe.newPage();
     let bookInfo = [];
     try{
-        await page.goto("https://www.empik.com/ksiazki,31,s?q=" + search + "&qtype=basicForm&resultsPP=6", { waitUntil: "domcontentloaded", });
+        await page.goto("https://www.empik.com/ksiazki,31,s?q=" + search + "&qtype=basicForm", { waitUntil: "domcontentloaded", });
         bookInfo = await page.evaluate(() => {
             const books = document.querySelectorAll("div.search-list-item.js-reco-product.js-energyclass-product.ta-product-tile");
             return Array.from(books).map((book) => {
                 let title = book.querySelector("a.seoTitle").innerText;
-                let author = book.querySelector("a.smartAuthor").innerText;
-                let price = book.querySelector("div[itemprop='price']").innerText;
+                let author = book.querySelector("div.smartAuthorWrapper.ta-product-smartauthor").innerText;
+                let price = book.querySelector('div.price.ta-price-tile').innerText;
                 let img = book.querySelector("img.lazy").getAttribute("lazy-img");
                 let link = "https://www.empik.com" + book.querySelector("a.seoTitle").getAttribute("href");
                 return {title, author, price, img, link};
@@ -110,8 +34,9 @@ async function EmpikSearch(search, Puppe) {
     }
     catch(err){
         console.log(err);
+        //console.log("Empik - no book found.");
     }
-    return bookInfo;
+    return bookInfo.slice(0,6);
 }
 
 async function TaniaKsiazkaSearch(search, Puppe) {
@@ -132,7 +57,7 @@ async function TaniaKsiazkaSearch(search, Puppe) {
     });
     }
     catch(err){
-        console.log(err);
+        console.log("TaniaKsiazka - no book found.");
     }
     return bookInfo.slice(0,6);
 }
@@ -155,7 +80,9 @@ async function TantisSearch(search, Puppe) {
     });
     }
     catch(err){
-        console.log(err);
+        console.log("Tantis - no book found.");
     }
     return bookInfo.slice(0,6);
 }
+
+export default Scrap;

@@ -3,7 +3,7 @@ import puppeteer from "puppeteer";
 async function Scrap(search) {
     if (search != null) {
         const Puppe = await puppeteer.launch({
-            headless: 'false',
+            headless: 'new',
             deafultViewport: null,
         });
         let result = [];
@@ -23,9 +23,14 @@ async function EmpikSearch(search, Puppe) {
         bookInfo = await page.evaluate(() => {
             const books = document.querySelectorAll("div.search-list-item.js-reco-product.js-energyclass-product.ta-product-tile");
             return Array.from(books).map((book) => {
+                let price;
                 let title = book.querySelector("a.seoTitle").innerText;
                 let author = book.querySelector("div.smartAuthorWrapper.ta-product-smartauthor").innerText;
-                let price = book.querySelector('div.price.ta-price-tile').innerText;
+                try{
+                    price = book.querySelector('div.price.ta-price-tile').innerText;
+                }
+                catch(err){
+                }
                 let img = book.querySelector("img.lazy").getAttribute("lazy-img");
                 let link = "https://www.empik.com" + book.querySelector("a.seoTitle").getAttribute("href");
                 return {title, author, price, img, link};
@@ -80,6 +85,7 @@ async function TantisSearch(search, Puppe) {
     });
     }
     catch(err){
+        console.error(err);
         console.log("Tantis - no book found.");
     }
     return bookInfo.slice(0,6);

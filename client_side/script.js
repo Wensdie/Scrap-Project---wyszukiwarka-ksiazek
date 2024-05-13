@@ -1,61 +1,18 @@
 window.onload = () => {
+    
+    const table = document.getElementById("dataTable");
+    const serverURL = "http://localhost:8081/";
+
     const button = document.getElementById("searchButton");
-    let table = document.getElementById("dataTable");
-    let shop;
-    let tableInnerHtmlVariable = "";
-    let result;
-
     button.addEventListener("click", async () => {
-        let search = document.getElementById("searchBar").value;
+        const search = document.getElementById("searchBar").value;
         document.getElementById("searchButton").disabled = true;
-        axios.get("http://localhost:8081/" + search).
+        axios.get(serverURL + search).
         then((res) => {
-            result = res.data;
+            const result = res.data;
             console.log(result);
-            tableInnerHtmlVariable += "<br><table>"+
-            "<tr>"+
-                "<th>Sklep</th>"+
-                "<th>Tytuł</th>"+
-                "<th>Autor</th>"+
-                "<th>Cena</th>"+
-                "<th>Zdjęcie</th>"+
-                "<th>Link</th>"+
-           " </tr>";
-            for(let i = 0; i < result.length; i++){
-                for(let j = 0; j <result[i].length; j++){
-                    if(i == 0)
-                        shop = "Empik";
-                    else if(i == 1)
-                        shop = "Tania Książka";
-                    else
-                        shop = "Tantis";
-
-                    tableInnerHtmlVariable += "<tr>";
-                    tableInnerHtmlVariable += "<td>";
-                    tableInnerHtmlVariable += shop;
-                    tableInnerHtmlVariable += "</td>";
-                    tableInnerHtmlVariable += "<td>";
-                    tableInnerHtmlVariable += result[i][j].title;
-                    tableInnerHtmlVariable += "</td>";
-                    tableInnerHtmlVariable += "<td>";
-                    tableInnerHtmlVariable += result[i][j].author;
-                    tableInnerHtmlVariable += "</td>";
-                    tableInnerHtmlVariable += "<td>";
-                    tableInnerHtmlVariable += result[i][j].price;
-                    tableInnerHtmlVariable += "</td>";
-                    tableInnerHtmlVariable += "<td>";
-                    tableInnerHtmlVariable += "<img src='" + result[i][j].img + "'>";
-                    tableInnerHtmlVariable += "</td>";
-                    tableInnerHtmlVariable += "<td>";
-                    tableInnerHtmlVariable += "<a href='" + result[i][j].link + "' target='_blank'>Link</a>";
-                    tableInnerHtmlVariable += "</td>";
-                    tableInnerHtmlVariable += "</tr>";
-                }
-            }
-            tableInnerHtmlVariable += "</table>";
             table.innerHTML = "";
-            table.innerHTML = tableInnerHtmlVariable;
-            tableInnerHtmlVariable = "";
+            table.innerHTML = tableGenrator(result);
         })
         .catch((error) => {
             console.log(error);
@@ -63,22 +20,22 @@ window.onload = () => {
         document.getElementById("searchButton").disabled = false;
     });
 
-    buttonSave = document.getElementById("saveRequest");
-    buttonShowSaved = document.getElementById("showSavedRequests");
-
+    const buttonSave = document.getElementById("saveRequest");
     buttonSave.addEventListener("click", () =>{
-            axios.post("http://localhost:8081/", { 
+            axios.post(serverURL, { 
                 action : 'save'
             }).then((res) => {
                 window.alert(res.data);
             });
     });
 
+    const buttonShowSaved = document.getElementById("showSavedRequests");
     buttonShowSaved.addEventListener("click", () =>{
-        axios.post("http://localhost:8081/", { 
+        axios.post(serverURL, { 
             action : 'show'
         }).then((res) => {
             table.innerHTML = "";
+            let tableInnerHtmlVariable = "";
             for(let i = 0; i < res.data[0].rowCount; i++){
                 let oneSearchResults = res.data[1].rows.filter((row) => {
                     return row.id_search == res.data[0].rows[i].id_search;
@@ -93,6 +50,7 @@ window.onload = () => {
                     "<th>Zdjęcie</th>"+
                     "<th>Link</th>"+
                " </tr>";
+
                 for(let i = 0; i < oneSearchResults.length; i++){
                     tableInnerHtmlVariable += "<tr>";
                     tableInnerHtmlVariable += "<td>";
@@ -123,3 +81,45 @@ window.onload = () => {
         });
     });
 };
+
+function tableGenrator(result){
+    let tableInnerHtmlVariable = "";
+    tableInnerHtmlVariable += "<br><table>"+
+        "<tr>"+
+        "<th>Sklep</th>"+
+        "<th>Tytuł</th>"+
+        "<th>Autor</th>"+
+        "<th>Cena</th>"+
+        "<th>Zdjęcie</th>"+
+        "<th>Link</th>"+
+        "</tr>";
+    const resultMap = new Map(Object.entries(result));
+    for(const [shop, books] of resultMap){
+        for(const book of books){
+            const {title, author, price, img, link} = book;
+            tableInnerHtmlVariable += "<tr>";
+            tableInnerHtmlVariable += "<td>";
+            tableInnerHtmlVariable += shop;
+            tableInnerHtmlVariable += "</td>";
+            tableInnerHtmlVariable += "<td>";
+            tableInnerHtmlVariable += title;
+            tableInnerHtmlVariable += "</td>";
+            tableInnerHtmlVariable += "<td>";
+            tableInnerHtmlVariable += author;
+            tableInnerHtmlVariable += "</td>";
+            tableInnerHtmlVariable += "<td>";
+            tableInnerHtmlVariable += price;
+            tableInnerHtmlVariable += "</td>";
+            tableInnerHtmlVariable += "<td>";
+            tableInnerHtmlVariable += `<img src="${img}">`;
+            tableInnerHtmlVariable += "</td>";
+            tableInnerHtmlVariable += "<td>";
+            tableInnerHtmlVariable += `<a href="${link}" target="_blank">Link</a>`;
+            tableInnerHtmlVariable += "</td>";
+            tableInnerHtmlVariable += "</tr>";
+        }
+    }
+    tableInnerHtmlVariable += "</table>";
+    
+    return tableInnerHtmlVariable;
+}

@@ -9,6 +9,14 @@ class Server{
     constructor(){
         const ex = express();
 
+        connection.connect()
+        .then(() => {
+            console.log('Connected.');
+        })
+        .catch((err) => {
+            console.error('Error connecting to database', err);
+        });
+
         this.setProperites(ex)
         this.getMethod(ex);
         this.postMethod(ex, connection);
@@ -37,31 +45,17 @@ class Server{
 
     postMethod(ex, dataBase) {
         ex.post("/", async (req, res, next) => {
-            dataBase.connect()
-            .then(() => {
-                console.log('Connected.');
-            })
-            .catch((err) => {
-                console.error('Error connecting to database', err);
-            });
-            
-            if(req.body.action == "save" && this.lastRequestResult != null && this.lastSearch != null){
-                let shop;
-                let querySearch = "INSERT INTO searches (phrase) VALUES ($1);";
+            if(req.body.action == "save" && this.lastRequestResult && this.lastSearch){
+                const querySearch = "INSERT INTO searches (phrase) VALUES ($1);";
                 await dataBase.query(querySearch, [this.lastSearch]);
-                let queryGetSearchID = "SELECT id_search FROM searches ORDER BY id_search DESC;";
-                let searchID = (await dataBase.query(queryGetSearchID)).rows[0].id_search;
-                let queryResults = "INSERT INTO results (id_search, shop_name, title, author, price, img, link) VALUES ($1, $2, $3, $4, $5, $6, $7);";
-                for(let i = 0; i < this.lastRequestResult.length; i++){
-                    if(i == 0)
-                            shop = "Empik";
-                        else if(i == 1)
-                            shop = "Tania Książka";
-                        else
-                            shop = "Tantis";
-                        
-                    for(let j = 0; j <this.lastRequestResult[i].length; j++){
-                        await dataBase.query(queryResults, [searchID, shop, this.lastRequestResult[i][j].title, this.lastRequestResult[i][j].author, this.lastRequestResult[i][j].price, this.lastRequestResult[i][j].img, this.lastRequestResult[i][j].link]);
+                const queryGetSearchID = "SELECT id_search FROM searches ORDER BY id_search DESC;";
+                const searchID = (await dataBase.query(queryGetSearchID)).rows[0].id_search;
+                const queryResults = "INSERT INTO results (id_search, shop_name, title, author, price, img, link) VALUES ($1, $2, $3, $4, $5, $6, $7);";
+                const resultMap = new Map(Object.entries(this.lastRequestResult));
+                for(const [shop, books] of resultMap){
+                    for(const book of books){
+                        const {title, author, price, img, link} = book;
+                        await dataBase.query(queryResults, [searchID, shop, title, author, price, img, link]);
                     }
                 }
                 res.send("Succesfully saved.");
@@ -78,7 +72,7 @@ class Server{
             else{
                 res.send("Unknown operation.")
             }
-            dataBase.end();
+            
         });
     } 
 }

@@ -1,18 +1,21 @@
 import puppeteer from "puppeteer";
 
 async function Scrap(search) {
-    if (search != null) {
-        const Puppe = await puppeteer.launch({
-            headless: 'new',
-            deafultViewport: null,
-        });
-        let result = [];
-        result.push(await EmpikSearch(search, Puppe));
-        result.push(await TaniaKsiazkaSearch(search, Puppe));
-        result.push(await TantisSearch(search, Puppe));
-        Puppe.close();
-        return result;
+    if (!search) {
+        return;
     }
+
+    const Puppe = await puppeteer.launch({
+        headless: 'new',
+        deafultViewport: null,
+    });
+    const result = {
+        Empik: await EmpikSearch(search, Puppe),
+        TaniaKsiazka: await TaniaKsiazkaSearch(search, Puppe),
+        Tantis: await TantisSearch(search, Puppe)
+    };
+    Puppe.close();
+    return result;
 }
 
 async function EmpikSearch(search, Puppe) {
